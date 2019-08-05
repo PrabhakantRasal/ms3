@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="updateContactSub_Flow" doc:id="71a3a780-27b0-4803-b8ae-d281c2b9ed18" >
+		<ee:transform doc:name="Transform Message" doc:id="8c9080d4-1b74-4cbb-ad79-3c938d55c4c4" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="identification" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'LASTNAME': payload.identification.lastName,
+	'FIRSTNAME':payload.identification.firstName,
+	'DOB':payload.identification.DOB,
+	'GENDER':payload.identification.gender,
+	'TITLE':payload.identification.title,
+	'ID': attributes.uriParams.ID
+}]]></ee:set-variable>
+				<ee:set-variable variableName="address" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.address map{
+'TYPE': $.'type',
+'Number': $.number,
+'STREET': $.street,
+'UNIT': $.unit,
+'CITY': $.city,
+'STATE':$.state,
+'ZIPCODE':$.zipcode,
+'ID': attributes.uriParams.ID
+}]]></ee:set-variable>
+				<ee:set-variable variableName="communication" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.communication map{
+'TYPE': $.'type',
+'VALUE': $.value,
+'PREFFERED': if($.preferred == 'true')'Y' else 'N',
+'ID': attributes.uriParams.ID
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:update doc:name="Update" doc:id="27c4d85a-e130-4d0b-9a98-14edf0268bcb" config-ref="Database_Config">
+			<db:sql >UPDATE persons SET LASTNAME = :LASTNAME, FIRSTNAME= :FIRSTNAME, DOB= :DOB, GENDER= :GENDER, TITLE= :TITLE WHERE ID= :ID</db:sql>
+			<db:input-parameters ><![CDATA[#[vars.identification]]]></db:input-parameters>
+		</db:update>
+		<db:bulk-update doc:name="Bulk update" doc:id="cc3de7dc-7359-4363-99fa-562075dbefb1" config-ref="Database_Config">
+			<db:bulk-input-parameters ><![CDATA[#[vars.address]]]></db:bulk-input-parameters>
+			<db:sql>UPDATE Address SET TYPE=:TYPE, Number1=:Number, STREET=:STREET, UNIT=:UNIT, CITY=:CITY, STATE=:STATE, ZIPCODE=:ZIPCODE WHERE PERSONID=:ID</db:sql>
+		</db:bulk-update>
+		<db:bulk-update doc:name="Bulk update" doc:id="016eee88-e89a-422a-a706-bae3449a17b8" config-ref="Database_Config">
+			<db:bulk-input-parameters ><![CDATA[#[vars.communication]]]></db:bulk-input-parameters>
+			<db:sql >UPDATE Communication SET TYPE=:TYPE, VALUE=:VALUE, PREFFERED=:PREFFERED WHERE PERSONID=:ID</db:sql>
+		</db:bulk-update>
+	</sub-flow>
+</mule>

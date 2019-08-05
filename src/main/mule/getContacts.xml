@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	
+	<sub-flow name="getContactsSub_Flow" doc:id="9d42deec-feb5-42d5-8473-6349b2dc42ac" >
+		<db:select doc:name="Select" doc:id="7408fb64-8553-4845-a28e-3c4a4fe02fc6" config-ref="Database_Config">
+			<db:sql >select * from PERSONS where FirstName = :FirstName AND Lastname= :LastName OR ID= :ID</db:sql>
+			<db:input-parameters ><![CDATA[#[{'FirstName': attributes.queryParams.firstName, 'LastName': attributes.queryParams.lastName, 'ID': attributes.uriParams.ID}]]]></db:input-parameters>
+		</db:select>
+		<set-variable doc:name="Set Variable" doc:id="a467d51f-ec78-4e61-a977-4566ba4ee35f" variableName="contacts" value="#[[]]"/>
+		<foreach doc:name="For Each" doc:id="b2261a08-1db8-4a21-8096-55344d2c2e0f" >
+			<db:select doc:name="Select" doc:id="4ed51b23-46e4-4a4f-a069-63a7361a19d7" config-ref="Database_Config" target="Address">
+				<db:sql >select * from address where personID = :personID</db:sql>
+				<db:input-parameters ><![CDATA[#[{'personID': payload.ID}]]]></db:input-parameters>
+			</db:select>
+			<db:select doc:name="Select" doc:id="2dc045aa-515d-4912-bcad-9a4186b66efe" config-ref="Database_Config" target="Communication">
+				<db:sql >select * from communication where personID = :personID</db:sql>
+				<db:input-parameters ><![CDATA[#[{'personID': payload.ID}]]]></db:input-parameters>
+			</db:select>
+			<ee:transform doc:name="Transform Message" doc:id="da179c1d-c781-4b1b-98f0-d4f056b62e59" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="contacts" ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+var contact = {
+	"identification": payload,
+	"address": vars.Address,
+	"communication": vars.Communication
+}
+---
+vars.contacts + contact]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="dab89974-65fb-4129-bfe6-ec8760ec5b1f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+vars.contacts map{
+	"identification": {
+		"ID": $.identification.ID,
+		"firstName": $.identification.FIRSTNAME,
+		"lastName": $.identification.LASTNAME,
+		"gender": $.identification.GENDER,
+		"DOB": $.identification.DOB,
+		"title": $.identification.TITLE
+	},
+	address: $.address map{
+		zipcode: $.ZIPCODE,
+		number: $.NUMBER1,
+		unit: $.UNIT,
+		city: $.CITY,
+		street: $.STREET,
+		state: $.STATE,
+		"type": $.TYPE
+	},
+	communication: $.communication map{
+		perffered: if($.PREFFERED == 'Y')true else false,
+		"type": $.TYPE,
+		value: $.VALUE
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+</mule>

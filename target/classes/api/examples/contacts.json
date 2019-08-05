@@ -1,0 +1,28 @@
+[{
+  "identification": {
+    "ID": 1,
+    "firstName": "Bob",
+    "lastName": "Frederick",
+    "DOB": "06/21/1980",
+    "gender": "M",
+    "title": "Manager"
+  },
+  "address": [
+    {
+      "type": "home",
+      "number": 1234,
+      "street": "blah blah St",
+      "unit": "1 a",
+      "city": "Somewhere",
+      "state": "WV",
+      "zipcode": "12345"
+    }
+  ],
+  "communication": [
+    {
+      "type": "email",
+      "value": "bfe@sample.com",
+      "perffered": true
+    }
+  ]
+}]

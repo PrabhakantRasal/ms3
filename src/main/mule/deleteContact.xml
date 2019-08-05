@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="deleteContactSub_Flow" doc:id="085110aa-b094-457c-9f01-f114b48ed041" >
+		<db:select doc:name="Select" doc:id="5a6a166f-2437-4dc8-8683-04711e428237" config-ref="Database_Config">
+			<db:sql >select ID from PERSONS where FirstName = :FirstName AND Lastname= :LastName  OR ID= :ID</db:sql>
+			<db:input-parameters ><![CDATA[#[{'FirstName': attributes.queryParams.firstName, 'LastName': attributes.queryParams.lastName, 'ID': attributes.uriParams.ID}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="38158e9c-f941-4983-817b-42a1774cdcd7" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="IDs" ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:bulk-delete doc:name="Bulk delete" doc:id="543cddba-342b-4497-ae5a-9666b86843af" config-ref="Database_Config">
+			<db:bulk-input-parameters ><![CDATA[#[vars.IDs]]]></db:bulk-input-parameters>
+			<db:sql >DELETE FROM Communication WHERE PERSONID = (:ID)</db:sql>
+		</db:bulk-delete>
+		<db:bulk-delete doc:name="Bulk delete" doc:id="31ccfe53-0418-4acb-b315-f489df9c3369" config-ref="Database_Config">
+			<db:bulk-input-parameters ><![CDATA[#[vars.IDs]]]></db:bulk-input-parameters>
+			<db:sql >DELETE FROM Address WHERE PERSONID = (:ID)</db:sql>
+		</db:bulk-delete>
+		<db:bulk-delete doc:name="Bulk delete" doc:id="f06dcad2-0be4-4785-8d3d-06500a8df091" config-ref="Database_Config">
+			<db:bulk-input-parameters ><![CDATA[#[vars.IDs]]]></db:bulk-input-parameters>
+			<db:sql >DELETE FROM Persons WHERE ID = ( :ID)</db:sql>
+		</db:bulk-delete>
+	</sub-flow>
+</mule>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="createContactSub_Flow" doc:id="a5c73a06-cd9d-4104-9bcd-42941b6c6235" >
+		<ee:transform doc:name="Transform Message" doc:id="f10394fe-01ff-4335-91ad-4a879b5391ee">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'LASTNAME': payload.identification.lastName,
+	'FIRSTNAME':payload.identification.firstName,
+	'DOB':payload.identification.DOB,
+	'GENDER':payload.identification.gender,
+	'TITLE':payload.identification.title
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="request" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:insert doc:name="Insert" doc:id="8b707f30-8508-476e-a291-391b35bd4d4f" config-ref="Database_Config" autoGenerateKeys="true">
+			<db:sql >insert into persons (LASTNAME,FIRSTNAME,DOB,GENDER,TITLE) values (:LASTNAME,:FIRSTNAME,:DOB,:GENDER,:TITLE)</db:sql>
+			<db:input-parameters ><![CDATA[#[payload]]]></db:input-parameters>
+			<db:auto-generated-keys-column-indexes >
+				<db:auto-generated-keys-column-index value="1" />
+			</db:auto-generated-keys-column-indexes>
+			<db:auto-generated-keys-column-names >
+				<db:auto-generated-keys-column-name value="ID" />
+			</db:auto-generated-keys-column-names>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="721c3e86-2491-41a4-bfcc-33bc89936c31">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.request.address map{
+'TYPE': $.'type',
+'Number': $.number,
+'STREET': $.street,
+'UNIT': $.unit,
+'CITY': $.city,
+'STATE':$.state,
+'ZIPCODE':$.zipcode,
+'PERSONID' : payload.generatedKeys.ID
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="Communication" ><![CDATA[%dw 2.0
+output application/json
+---
+vars.request.communication map{
+'TYPE': $.'type',
+'VALUE': $.value,
+'PREFFERED': if($.preferred == 'true')'Y' else 'N',
+'PERSONID' : payload.generatedKeys.ID
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="1b86c263-ace7-409d-9fce-5162468b9335" config-ref="Database_Config">
+			<db:sql >insert into Address (TYPE,Number1,STREET,UNIT,CITY,STATE,ZIPCODE,PERSONID) values (:TYPE,:Number,:STREET,:UNIT,:CITY,:STATE,:ZIPCODE,:PERSONID)</db:sql>
+		</db:bulk-insert>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="0980004a-70c5-49f8-9b57-35008705476b" config-ref="Database_Config">
+			<db:bulk-input-parameters ><![CDATA[#[vars.Communication]]]></db:bulk-input-parameters>
+			<db:sql >insert into Communication (TYPE,VALUE,PREFFERED,PERSONID) values (:TYPE,:VALUE,:PREFFERED,:PERSONID)</db:sql>
+		</db:bulk-insert>
+	</sub-flow>
+</mule>

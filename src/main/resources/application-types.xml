@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="output" format="json">
+      <types:shape format="weave" example="examples/a.json"><![CDATA[%dw 2.0
+
+type output = {|
+  ID: String, 
+  Identification: {|
+    FirstName: String, 
+    LastName: String, 
+    DOB: String, 
+    Gender: String, 
+    Title: String
+  |}, 
+  Address: Array<{|    "type ": String,     number: Number {"typeId": "int"},     street: String,     Unit: String,     City: String,     State: String,     zipcode: String  |}>, 
+  Communication: Array<{|    "type": String,     value: String,     preferred: String  |}>
+|} {"example": "{\"ID\":\"0001\",\"Identification\":{\"FirstName\":\"Bob\",\"LastName\":\"Frederick\",\"DOB\":\"06\/21\/1980\",\"Gender\":\"M\",\"Title\":\"Manager\"},\"Address\":[{\"type \":\"home\",\"number\":1234,\"street\":\"blah blah St\",\"Unit\":\"1 a\",\"City\":\"Somewhere\",\"State\":\"WV\",\"zipcode\":\"12345\"}],\"Communication\":[{\"type\":\"email\",\"value\":\"bfe@sample.com\",\"preferred\":\"true\"},{\"type\":\"cell\",\"value\":\"304-555-8282\"}]}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#da179c1d-c781-4b1b-98f0-d4f056b62e59"/>
+</types:mule>
